@@ -21,8 +21,7 @@ class Settings:
     # Allowed video formats
     ALLOWED_EXTENSIONS: set = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
     
-    WHISPER_MODEL: str = os.getenv("WHISPER_MODEL", "base")
-    
+    WHISPER_MODEL: str = os.getenv("WHISPER_MODEL", "base").lower()
     # Default translation target language
     DEFAULT_TARGET_LANGUAGE: str = os.getenv("DEFAULT_TARGET_LANGUAGE", "hi")  # Hindi
 
