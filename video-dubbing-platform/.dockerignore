@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Virtual Environment
+venv/
+env/
+
+# Storage (runtime files)
+storage/uploads/*
+storage/audio/*
+storage/outputs/*
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Secrets
+.env
+
+# Docs
+README.md
+*.md

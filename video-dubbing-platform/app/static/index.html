@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI Video Dubbing Platform</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 40px;
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 24px;
+        }
+
+        .card h2 {
+            font-size: 1.1rem;
+            color: #a78bfa;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #3a3a6a;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #a78bfa;
+            background: #1f1f3a;
+        }
+
+        .upload-area .icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .upload-area p { color: #888; font-size: 0.9rem; }
+        .upload-area .filename {
+            color: #a78bfa;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        #fileInput { display: none; }
+
+        /* Language Select */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0f0f1a;
+            border: 1px solid #3a3a6a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        select:focus { outline: none; border-color: #a78bfa; }
+
+        /* Button */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #7c3aed, #2563eb);
+            color: white;
+        }
+
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-download {
+            background: linear-gradient(90deg, #059669, #0891b2);
+            color: white;
+            margin-top: 16px;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            line-height: 1;
+            padding: 14px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .btn-download:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* Progress Section */
+        #progressSection { display: none; }
+
+        .status-steps {
+            margin-bottom: 24px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid #2a2a4a;
+            transition: all 0.4s;
+        }
+
+        .step:last-child { border-bottom: none; }
+
+        .step-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+            background: #2a2a4a;
+            color: #666;
+            transition: all 0.4s;
+        }
+
+        .step.active .step-icon {
+            background: #3b1d8a;
+            color: #a78bfa;
+            animation: pulse 1.5s infinite;
+        }
+
+        .step.done .step-icon {
+            background: #064e3b;
+            color: #34d399;
+        }
+
+        .step.error .step-icon {
+            background: #7f1d1d;
+            color: #f87171;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(167,139,250,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(167,139,250,0); }
+        }
+
+        .step-info { flex: 1; }
+        .step-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ccc;
+        }
+        .step.active .step-title { color: #a78bfa; }
+        .step.done .step-title { color: #34d399; }
+
+        .step-desc {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 2px;
+        }
+        .step.active .step-desc { color: #888; }
+
+        /* Progress Bar */
+        .progress-bar-wrap {
+            background: #2a2a4a;
+            border-radius: 99px;
+            height: 8px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, #7c3aed, #2563eb);
+            transition: width 0.6s ease;
+            width: 0%;
+        }
+
+        .progress-label {
+            text-align: right;
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        /* Result */
+        #resultSection { display: none; }
+
+        .success-banner {
+            text-align: center;
+            padding: 20px;
+            background: #064e3b22;
+            border: 1px solid #34d39944;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .success-banner .big-icon { font-size: 3rem; }
+        .success-banner h3 {
+            color: #34d399;
+            margin: 8px 0 4px;
+            font-size: 1.2rem;
+        }
+        .success-banner p { color: #888; font-size: 0.9rem; }
+
+        /* Error */
+        .error-banner {
+            background: #7f1d1d22;
+            border: 1px solid #f8717144;
+            border-radius: 12px;
+            padding: 16px;
+            color: #f87171;
+            font-size: 0.9rem;
+        }
+
+        .reset-btn {
+            background: transparent;
+            border: 1px solid #3a3a6a;
+            color: #888;
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .reset-btn:hover { border-color: #a78bfa; color: #a78bfa; }
+    </style>
+</head>
+<body>
+
+<h1>🎬 AI Video Dubbing</h1>
+<p class="subtitle">Upload a video → Get it dubbed in any language using AI</p>
+
+<!-- Upload Card -->
+<div class="card" id="uploadCard">
+    <h2>📤 Upload Video</h2>
+
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">🎥</div>
+        <p>Click to select or drag & drop your video</p>
+        <p style="font-size:0.8rem; margin-top:6px;">MP4, AVI, MOV, MKV • Max 500MB</p>
+        <div class="filename" id="selectedFileName"></div>
+    </div>
+    <input type="file" id="fileInput" accept=".mp4,.avi,.mov,.mkv,.webm" />
+
+    <div class="form-group">
+        <label>🌐 Target Language</label>
+        <select id="targetLanguage">
+            <option value="hi">🇮🇳 Hindi</option>
+            <option value="es">🇪🇸 Spanish</option>
+            <option value="fr">🇫🇷 French</option>
+            <option value="de">🇩🇪 German</option>
+            <option value="ja">🇯🇵 Japanese</option>
+            <option value="ko">🇰🇷 Korean</option>
+            <option value="zh-cn">🇨🇳 Chinese</option>
+            <option value="ar">🇸🇦 Arabic</option>
+            <option value="pt">🇧🇷 Portuguese</option>
+            <option value="ru">🇷🇺 Russian</option>
+            <option value="it">🇮🇹 Italian</option>
+        </select>
+    </div>
+
+    <button class="btn btn-primary" id="uploadBtn" onclick="startUpload()" disabled>
+        🚀 Start Dubbing
+    </button>
+</div>
+
+<!-- Progress Card -->
+<div class="card" id="progressSection">
+    <h2>⚙️ Processing</h2>
+
+    <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0%</div>
+
+    <div class="status-steps">
+        <div class="step" id="step-transcription">
+            <div class="step-icon">🎙️</div>
+            <div class="step-info">
+                <div class="step-title">Speech Recognition</div>
+                <div class="step-desc">Extracting speech using Whisper AI</div>
+            </div>
+        </div>
+        <div class="step" id="step-translation">
+            <div class="step-icon">🌐</div>
+            <div class="step-info">
+                <div class="step-title">Translation</div>
+                <div class="step-desc">Converting text to target language</div>
+            </div>
+        </div>
+        <div class="step" id="step-tts">
+            <div class="step-icon">🔊</div>
+            <div class="step-info">
+                <div class="step-title">Voice Generation</div>
+                <div class="step-desc">Generating dubbed audio with AI</div>
+            </div>
+        </div>
+        <div class="step" id="step-merge">
+            <div class="step-icon">🎬</div>
+            <div class="step-info">
+                <div class="step-title">Video Merge</div>
+                <div class="step-desc">Combining dubbed audio with video</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="currentMessage" style="
+        font-size: 0.85rem;
+        color: #888;
+        text-align: center;
+        padding: 10px;
+        background: #0f0f1a;
+        border-radius: 8px;
+    "></div>
+</div>
+
+<!-- Result Card -->
+<div class="card" id="resultSection">
+    <div class="success-banner" id="successBanner">
+        <div class="big-icon">🎉</div>
+        <h3>Dubbing Complete!</h3>
+        <p>Your video is ready to download</p>
+    </div>
+
+    <div class="error-banner" id="errorBanner" style="display:none;">
+        ❌ <span id="errorMessage">Something went wrong.</span>
+    </div>
+
+    <a class="btn-download" id="downloadBtn" href="#" download>
+        ⬇️ Download Dubbed Video
+    </a>
+
+    <button class="reset-btn" onclick="resetUI()">↩️ Dub Another Video</button>
+</div>
+
+<script>
+    const API_BASE = window.location.origin;
+    let currentJobId = null;
+    let pollInterval = null;
+
+    // File select handling
+    document.getElementById('fileInput').addEventListener('change', function () {
+        const file = this.files[0];
+        if (file) {
+            document.getElementById('selectedFileName').textContent = '✅ ' + file.name;
+            document.getElementById('uploadBtn').disabled = false;
+        }
+    });
+
+    // Drag and drop
+    const uploadArea = document.getElementById('uploadArea');
+    uploadArea.addEventListener('dragover', e => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            document.getElementById('fileInput').files = e.dataTransfer.files;
+            document.getElementById('selectedFileName').textContent = '✅ ' + file.name;
+            document.getElementById('uploadBtn').disabled = false;
+        }
+    });
+
+    async function startUpload() {
+        const file = document.getElementById('fileInput').files[0];
+        const language = document.getElementById('targetLanguage').value;
+
+        if (!file) return;
+
+        // UI update
+        document.getElementById('uploadBtn').disabled = true;
+        document.getElementById('uploadBtn').textContent = '⏳ Uploading...';
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('target_language', language);
+
+        try {
+            const res = await fetch(`${API_BASE}/api/v1/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+
+            const data = await res.json();
+            currentJobId = data.job_id;
+
+            // Show progress section
+            document.getElementById('uploadCard').style.display = 'none';
+            document.getElementById('progressSection').style.display = 'block';
+
+            // Start polling
+            pollInterval = setInterval(() => pollStatus(currentJobId), 3000);
+
+        } catch (err) {
+            alert('Upload failed: ' + err.message);
+            document.getElementById('uploadBtn').disabled = false;
+            document.getElementById('uploadBtn').textContent = '🚀 Start Dubbing';
+        }
+    }
+
+    async function pollStatus(jobId) {
+        try {
+            const res = await fetch(`${API_BASE}/api/v1/status/${jobId}`);
+            const data = await res.json();
+
+            updateProgressUI(data);
+
+            if (data.status === 'completed' || data.status === 'failed') {
+                clearInterval(pollInterval);
+                showResult(data);
+            }
+        } catch (err) {
+            console.error('Polling error:', err);
+        }
+    }
+
+    function updateProgressUI(data) {
+        const progress = data.progress || 0;
+
+        // Progress bar
+        document.getElementById('progressFill').style.width = progress + '%';
+        document.getElementById('progressLabel').textContent = progress + '%';
+        document.getElementById('currentMessage').textContent = data.message || '';
+
+        // Step highlighting based on progress
+        resetSteps();
+
+        if (progress >= 10 && progress < 55) {
+            setStep('step-transcription', 'active');
+        } else if (progress >= 30) {
+            setStep('step-transcription', 'done');
+        }
+
+        if (progress >= 35 && progress < 60) {
+            setStep('step-translation', 'active');
+        } else if (progress >= 55) {
+            setStep('step-translation', 'done');
+        }
+
+        if (progress >= 60 && progress < 85) {
+            setStep('step-tts', 'active');
+        } else if (progress >= 80) {
+            setStep('step-tts', 'done');
+        }
+
+        if (progress >= 85 && progress < 100) {
+            setStep('step-merge', 'active');
+        } else if (progress >= 100) {
+            setStep('step-merge', 'done');
+        }
+
+        if (data.status === 'failed') {
+            ['step-transcription','step-translation','step-tts','step-merge'].forEach(s => {
+                const el = document.getElementById(s);
+                if (el.classList.contains('active')) setStep(s, 'error');
+            });
+        }
+    }
+
+    function resetSteps() {
+        ['step-transcription','step-translation','step-tts','step-merge'].forEach(id => {
+            const el = document.getElementById(id);
+            el.classList.remove('active','done','error');
+        });
+    }
+
+    function setStep(id, state) {
+        const el = document.getElementById(id);
+        el.classList.remove('active','done','error');
+        el.classList.add(state);
+    }
+
+    function showResult(data) {
+        document.getElementById('progressSection').style.display = 'none';
+        document.getElementById('resultSection').style.display = 'block';
+
+        if (data.status === 'completed') {
+            document.getElementById('successBanner').style.display = 'block';
+            document.getElementById('errorBanner').style.display = 'none';
+
+            const downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.href = `${API_BASE}/api/v1/download/${currentJobId}`;
+            downloadBtn.style.display = 'block';
+        } else {
+            document.getElementById('successBanner').style.display = 'none';
+            document.getElementById('errorBanner').style.display = 'block';
+            document.getElementById('errorMessage').textContent =
+                data.error || 'Processing failed. Please try again.';
+            document.getElementById('downloadBtn').style.display = 'none';
+        }
+    }
+
+    function resetUI() {
+        currentJobId = null;
+        clearInterval(pollInterval);
+
+        document.getElementById('uploadCard').style.display = 'block';
+        document.getElementById('progressSection').style.display = 'none';
+        document.getElementById('resultSection').style.display = 'none';
+        document.getElementById('uploadBtn').disabled = true;
+        document.getElementById('uploadBtn').textContent = '🚀 Start Dubbing';
+        document.getElementById('selectedFileName').textContent = '';
+        document.getElementById('fileInput').value = '';
+        document.getElementById('progressFill').style.width = '0%';
+        resetSteps();
+    }
+</script>
+</body>
+</html>

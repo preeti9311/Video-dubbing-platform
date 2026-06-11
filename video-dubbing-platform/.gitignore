@@ -1,0 +1,35 @@
+cat > .gitignore << 'EOF'
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual Environment — IMPORTANT
+venv/
+env/
+
+# Environment secrets
+.env
+
+# Storage runtime files
+storage/uploads/*
+storage/audio/*
+storage/outputs/*
+!storage/uploads/.gitkeep
+!storage/audio/.gitkeep
+!storage/outputs/.gitkeep
+
+# Whisper model cache — IMPORTANT
+~/.cache/whisper/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+EOF
