@@ -9,16 +9,16 @@ RUN apt-get update && apt-get install -y \
 
 COPY requirements.txt .
 
-# setuptools pehle install karo — pkg_resources fix
+# setuptools + wheel pehle
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Phir whisper install karo
+# Whisper alag install karo
 RUN pip install --no-cache-dir openai-whisper
 
-# Baaki requirements install karo
+# Baaki packages
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Whisper model download karo
+# Whisper model download
 RUN python -c "import whisper; whisper.load_model('base'); print('✅ Whisper OK')"
 
 COPY . .
