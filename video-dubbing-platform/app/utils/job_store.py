@@ -1,32 +1,32 @@
 # app/utils/job_store.py
-# Yeh ek simple in-memory "database" hai jobs track karne ke liye.
-# Real production mein Redis ya PostgreSQL use hota hai,
-# lekin MVP ke liye dictionary bilkul theek hai.
+# File-based storage — server restart hone par bhi jobs rahenge
 
+import json
+import os
+import time
 from typing import Dict, Optional
 from app.models.schemas import JobStatus
-import time
 
-# Job ki poori information store karne ka structure
+JOBS_FILE = "storage/jobs.json"
+
 class JobInfo:
     def __init__(self, job_id: str, filename: str, original_filename: str):
         self.job_id = job_id
-        self.filename = filename                    # Saved file ka naam (job_id.ext)
-        self.original_filename = original_filename  # User ne jo naam diya tha
-        self.status = JobStatus.PENDING             # Shuru mein PENDING
-        self.progress = 0                           # 0% complete
+        self.filename = filename
+        self.original_filename = original_filename
+        self.status = JobStatus.PENDING
+        self.progress = 0
         self.message = "Job created, waiting to start"
-        self.result_file: Optional[str] = None      # Output file path
-        self.error: Optional[str] = None            # Error message if failed
-        self.created_at = time.time()               # Timestamp
+        self.result_file: Optional[str] = None
+        self.error: Optional[str] = None
+        self.created_at = time.time()
         self.updated_at = time.time()
         self.transcription = None
-        self.translation = None  
-        self.tts_audio_path = None  
+        self.translation = None
+        self.tts_audio_path = None
 
-    def update(self, status: JobStatus, progress: int, message: str,
-               result_file: str = None, error: str = None):
-        """Job ki status update karo"""
+    def update(self, status, progress, message,
+               result_file=None, error=None):
         self.status = status
         self.progress = progress
         self.message = message
@@ -35,47 +35,85 @@ class JobInfo:
         self.updated_at = time.time()
 
     def to_dict(self) -> dict:
-        """Object ko dictionary mein convert karo (API response ke liye)"""
         return {
             "job_id": self.job_id,
-            "filename": self.original_filename,
+            "filename": self.filename,
+            "original_filename": self.original_filename,
             "status": self.status,
             "progress": self.progress,
             "message": self.message,
             "result_file": self.result_file,
             "error": self.error,
             "created_at": self.created_at,
+            "updated_at": self.updated_at,
         }
 
 
-# Global job store — poore app mein yahi use hoga
-# Key = job_id, Value = JobInfo object
+# In-memory store
 _job_store: Dict[str, JobInfo] = {}
 
 
-def create_job(job_id: str, filename: str, original_filename: str) -> JobInfo:
-    """Naya job create karo aur store mein save karo"""
+def _save_to_file():
+    """Jobs ko file mein save karo"""
+    try:
+        os.makedirs("storage", exist_ok=True)
+        data = {k: v.to_dict() for k, v in _job_store.items()}
+        with open(JOBS_FILE, "w") as f:
+            json.dump(data, f)
+    except Exception as e:
+        print(f"⚠️ Could not save jobs: {e}")
+
+
+def _load_from_file():
+    """File se jobs load karo"""
+    try:
+        if os.path.exists(JOBS_FILE):
+            with open(JOBS_FILE, "r") as f:
+                data = json.load(f)
+            for job_id, job_data in data.items():
+                job = JobInfo(
+                    job_data["job_id"],
+                    job_data["filename"],
+                    job_data["original_filename"]
+                )
+                job.status = job_data["status"]
+                job.progress = job_data["progress"]
+                job.message = job_data["message"]
+                job.result_file = job_data.get("result_file")
+                job.error = job_data.get("error")
+                _job_store[job_id] = job
+            print(f"✅ Loaded {len(_job_store)} jobs from file")
+    except Exception as e:
+        print(f"⚠️ Could not load jobs: {e}")
+
+
+# App start hone par load karo
+_load_from_file()
+
+
+def create_job(job_id: str, filename: str,
+               original_filename: str) -> JobInfo:
     job = JobInfo(job_id, filename, original_filename)
     _job_store[job_id] = job
+    _save_to_file()
     print(f"✅ Job created: {job_id}")
     return job
 
 
 def get_job(job_id: str) -> Optional[JobInfo]:
-    """Job ID se job fetch karo. None return karta hai agar exist nahi karta."""
     return _job_store.get(job_id)
 
 
-def update_job(job_id: str, status: JobStatus, progress: int,
-               message: str, result_file: str = None, error: str = None) -> Optional[JobInfo]:
-    """Existing job ki status update karo"""
+def update_job(job_id: str, status, progress: int,
+               message: str, result_file=None,
+               error=None) -> Optional[JobInfo]:
     job = _job_store.get(job_id)
     if job:
         job.update(status, progress, message, result_file, error)
+        _save_to_file()
         print(f"📝 Job {job_id} updated: {status} ({progress}%)")
     return job
 
 
 def list_jobs() -> list:
-    """Saare jobs ki list return karo (debugging ke liye)"""
     return [job.to_dict() for job in _job_store.values()]
