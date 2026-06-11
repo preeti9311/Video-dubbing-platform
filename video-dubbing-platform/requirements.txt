@@ -5,10 +5,10 @@ uvicorn[standard]==0.27.0
 python-multipart==0.0.9
 python-dotenv==1.0.0
 pydantic==2.5.3
-openai-whisper
+openai-whisper==20231117
 ffmpeg-python==0.2.0
 deep-translator==1.11.4
 gTTS==2.5.0
 pydub==0.25.1
 jinja2==3.1.3
-aiofiles==23.2.1openai-whisper==20231117
+aiofiles==23.2.1
