@@ -10,3 +10,4 @@ pydub
 jinja2
 aiofiles
 elevenlabs
+redis==5.0.1
